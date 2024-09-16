@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/background"
+    android:padding="30dp">
+
+    <Button
+        android:layout_margin="20dp"
+        android:id="@+id/btnChooseFolder"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Choose Folder" />
+
+    <Button
+        android:id="@+id/btnCapture"
+        android:layout_margin="20dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Taking Photo" />
+
+
+    <Button
+        android:id="@+id/btnUpload"
+        android:layout_margin="20dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Upload Photo" />
+
+
+    <Button
+        android:id="@+id/btnSetNotification"
+        android:layout_margin="20dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="set notification" />
+
+
+    <LinearLayout
+        android:id="@+id/notification"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:weightSum="2"
+        android:visibility="gone"
+        android:orientation="horizontal"
+        android:padding="16dp">
+
+        <Spinner
+            android:layout_weight="1"
+            android:id="@+id/durationSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:entries="@array/duration_options" />
+
+        <Button
+            android:id="@+id/submitBtn"
+            android:layout_weight="1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Submit" />
+
+    </LinearLayout>
+
+
+</LinearLayout>
