@@ -25,8 +25,8 @@ public class MyForegroundService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        String uriString = intent.getStringExtra("URI");
-        Uri selectedUri = Uri.parse(uriString);
+
+
         createNotificationChannel();
         Intent notificationIntent = new Intent(this, FolderContentActivity.class);
         PendingIntent pendingIntent = PendingIntent.getActivity(this,

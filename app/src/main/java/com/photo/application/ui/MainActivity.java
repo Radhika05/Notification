@@ -46,15 +46,14 @@ public class MainActivity extends Activity {
 
     private static final int PICK_IMAGE_REQUEST = 1;
     private Button uploadButton;
-    private Uri selectedImageUri;
+
     private static final int CAMERA_PERMISSION_REQUEST_CODE = 1;
     private static final int REQUEST_PICK_FOLDER = 2;
     private static final int REQUEST_TAKE_PHOTO = 3;
 
     private static final int PERMISSION_REQUEST_POST_NOTIFICATIONS = 100;
 
-    private String selectedFolderPath;
-    private Uri selectedUri;
+
     private Uri photoURI;
     private int selectedHour = 20;
 
@@ -166,6 +165,8 @@ public class MainActivity extends Activity {
         editor.putString("selected_folder_uri", folderUri.toString());
         editor.apply();
     }
+
+
 
     // Helper method to get the saved folder URI from persistent storage
     private Uri getSavedFolderUri() {
@@ -333,6 +334,7 @@ public class MainActivity extends Activity {
             }
         } else if (requestCode == REQUEST_TAKE_PHOTO && resultCode == RESULT_OK) {
             if (photoURI != null) {
+
                 saveImageToSelectedFolder();
             } else {
                 Log.e("ImageCapture", "Photo URI is null");
@@ -340,8 +342,10 @@ public class MainActivity extends Activity {
             }
 
         } else if (requestCode == PICK_IMAGE_REQUEST && resultCode == RESULT_OK && data != null && data.getData() != null) {
-            selectedImageUri = data.getData();
-            saveImageToSelectedFolder(selectedImageUri);
+
+            photoURI = data.getData();
+
+            saveImageToSelectedFolder(photoURI);
         }
     }
 
@@ -363,27 +367,37 @@ public class MainActivity extends Activity {
         // Schedule 3rd notification after 1 day
         Calendar thirdNotificationTime = (Calendar) currentTime.clone();
         thirdNotificationTime.add(Calendar.DAY_OF_MONTH, 1);
-        secondNotificationTime.add(Calendar.HOUR_OF_DAY, selectedHour);
+        thirdNotificationTime.add(Calendar.HOUR_OF_DAY, selectedHour);
         scheduleNotification(thirdNotificationTime);
 
         // Schedule 4th notification after 14 days
         Calendar fourthNotificationTime = (Calendar) currentTime.clone();
         fourthNotificationTime.add(Calendar.DAY_OF_MONTH, 14);
-        secondNotificationTime.add(Calendar.HOUR_OF_DAY, selectedHour);
+        fourthNotificationTime.add(Calendar.HOUR_OF_DAY, selectedHour);
         scheduleNotification(fourthNotificationTime);
 
         // Schedule 5th notification after 60 days
         Calendar fifthNotificationTime = (Calendar) currentTime.clone();
         fifthNotificationTime.add(Calendar.DAY_OF_MONTH, 60);
-        secondNotificationTime.add(Calendar.HOUR_OF_DAY, selectedHour);
+        fifthNotificationTime.add(Calendar.HOUR_OF_DAY, selectedHour);
         scheduleNotification(fifthNotificationTime);
+
+
+
+
+
     }
 
     private void scheduleNotification(Calendar notificationTime) {
-        OneTimeWorkRequest notificationWorkRequest = new OneTimeWorkRequest.Builder(MyWorker.class)
+
+        OneTimeWorkRequest notificationWork = new OneTimeWorkRequest.Builder(MyWorker.class)
                 .setInitialDelay(calculateDelay(notificationTime), TimeUnit.MILLISECONDS)
                 .build();
-        WorkManager.getInstance(this).enqueue(notificationWorkRequest);
+
+        WorkManager.getInstance(this).enqueue(notificationWork);
+        Toast.makeText(this, "Notification scheduled", Toast.LENGTH_SHORT).show();
+
+
     }
 
     private long calculateDelay(Calendar notificationTime) {

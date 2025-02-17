@@ -50,13 +50,8 @@ public class MyWorker extends Worker {
             notificationManager.createNotificationChannel(notificationChannel);
         }
 
-        // Retrieve the URI from the intent
-        //Uri selectedUri = intent.getData();
-
-        //Toast.makeText(context, "Selected URL: " + selectedUri.toString(), Toast.LENGTH_SHORT).show();
 
         Intent intent1 = new Intent(getApplicationContext(), FolderContentActivity.class);
-        //intent1.putExtra("folderUri", "content://com.android.externalstorage.documents/tree/primary%3ADownload%2FDooFlix");
         PendingIntent pendingIntent = PendingIntent.getActivity(getApplicationContext(), 0, intent1, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(getApplicationContext(), NOTIFICATION_CHANNEL_ID)
