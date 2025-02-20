@@ -27,6 +27,7 @@ import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.documentfile.provider.DocumentFile;
 import androidx.work.OneTimeWorkRequest;
+import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkManager;
 
 import com.photo.application.R;
@@ -63,45 +64,41 @@ public class MainActivity extends Activity {
     // Step 5: Save the captured image to the selected folder
 
 
-    private void saveImageToSelectedFolder(Uri imageUri) {
-        // Retrieve the selected folder URI from persistent storage
+    private void saveImageToSelectedFolder(Uri sourceImageUri) {
+        // Get the destination folder URI (the user-selected folder)
         Uri folderUri = getSavedFolderUri();
         if (folderUri == null) {
             Toast.makeText(this, "No folder selected", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // Create a DocumentFile from the folder Uri
+        // Create a DocumentFile from the folder URI
         DocumentFile pickedDir = DocumentFile.fromTreeUri(this, folderUri);
-
         if (pickedDir != null && pickedDir.isDirectory()) {
             // Create a unique filename for the image
             String fileName = "IMG_" + System.currentTimeMillis() + ".jpg";
 
             // Create a new image file in the selected folder
             DocumentFile imageFile = pickedDir.createFile("image/jpeg", fileName);
-
             if (imageFile != null) {
                 try {
-                    // Write the content from the Uri to the new file
-                    InputStream inputStream = getContentResolver().openInputStream(imageUri);
+                    // Use the source image URI here (from gallery or camera)
+                    InputStream inputStream = getContentResolver().openInputStream(sourceImageUri);
                     OutputStream outputStream = getContentResolver().openOutputStream(imageFile.getUri());
-
                     if (inputStream != null && outputStream != null) {
                         byte[] buffer = new byte[1024];
                         int read;
                         while ((read = inputStream.read(buffer)) != -1) {
                             outputStream.write(buffer, 0, read);
                         }
-                        Toast.makeText(this, "Image saved successfully", Toast.LENGTH_SHORT).show();
                     }
+                    if (inputStream != null) inputStream.close();
+                    if (outputStream != null) outputStream.close();
 
-                    if (inputStream != null) {
-                        inputStream.close();
-                    }
-                    if (outputStream != null) {
-                        outputStream.close();
-                    }
+                    Toast.makeText(this, "Image saved successfully", Toast.LENGTH_SHORT).show();
+
+                    // Save the new image file's URI (for later display)
+                    saveImageUri(imageFile.getUri());
                     scheduleNotification();
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -116,34 +113,29 @@ public class MainActivity extends Activity {
     }
 
 
+
     private void saveImageToSelectedFolder() {
-        // Retrieve the selected folder URI from persistent storage
+        // Get the selected folder URI (destination)
         Uri folderUri = getSavedFolderUri();
         if (folderUri == null) {
             Toast.makeText(this, "No folder selected", Toast.LENGTH_SHORT).show();
             return;
         }
-
-        // Create a DocumentFile from the folder Uri
         DocumentFile pickedDir = DocumentFile.fromTreeUri(this, folderUri);
-
         if (pickedDir != null && pickedDir.isDirectory()) {
-            // Create a unique filename for the image
             String fileName = "IMG_" + System.currentTimeMillis() + ".jpg";
-
-            // Create a new image file in the selected folder
             DocumentFile imageFile = pickedDir.createFile("image/jpeg", fileName);
-
             if (imageFile != null) {
                 try {
-                    // Write the bitmap (image) to the file
                     OutputStream outputStream = getContentResolver().openOutputStream(imageFile.getUri());
-                    Bitmap bitmap = BitmapFactory.decodeFile(currentPhotoPath);  // Ensure currentPhotoPath holds the file path of the captured image
+                    Bitmap bitmap = BitmapFactory.decodeFile(currentPhotoPath);
                     if (bitmap != null) {
                         bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
                         Toast.makeText(this, "Image saved successfully", Toast.LENGTH_SHORT).show();
                     }
                     outputStream.close();
+                    // Save the new image file's URI
+                    saveImageUri(imageFile.getUri());
                     scheduleNotification();
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -158,7 +150,15 @@ public class MainActivity extends Activity {
     }
 
 
+
     // Helper method to save the folder URI persistently (e.g., SharedPreferences)
+//    private void saveFolderUri(Uri folderUri) {
+//        SharedPreferences sharedPreferences = getSharedPreferences("app_prefs", MODE_PRIVATE);
+//        SharedPreferences.Editor editor = sharedPreferences.edit();
+//        editor.putString("selected_folder_uri", folderUri.toString());
+//        editor.apply();
+//    }
+
     private void saveFolderUri(Uri folderUri) {
         SharedPreferences sharedPreferences = getSharedPreferences("app_prefs", MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPreferences.edit();
@@ -166,14 +166,39 @@ public class MainActivity extends Activity {
         editor.apply();
     }
 
-
-
-    // Helper method to get the saved folder URI from persistent storage
     private Uri getSavedFolderUri() {
         SharedPreferences sharedPreferences = getSharedPreferences("app_prefs", MODE_PRIVATE);
         String uriString = sharedPreferences.getString("selected_folder_uri", null);
         return uriString != null ? Uri.parse(uriString) : null;
     }
+
+
+
+
+
+    private void saveImageUri(Uri imageUri) {
+        SharedPreferences sharedPreferences = getSharedPreferences("app_prefs", MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putString("selected_image_uri", imageUri.toString()); // Save only the image URI
+        editor.apply();
+    }
+
+
+
+
+    // Helper method to get the saved folder URI from persistent storage
+//    private Uri getSavedFolderUri() {
+//        SharedPreferences sharedPreferences = getSharedPreferences("app_prefs", MODE_PRIVATE);
+//        String uriString = sharedPreferences.getString("selected_folder_uri", null);
+//        return uriString != null ? Uri.parse(uriString) : null;
+//    }
+
+    private Uri getSavedImageUri() {
+        SharedPreferences sharedPreferences = getSharedPreferences("app_prefs", MODE_PRIVATE);
+        String uriString = sharedPreferences.getString("selected_image_uri", null);
+        return uriString != null ? Uri.parse(uriString) : null;
+    }
+
 
 
     @Override
@@ -324,8 +349,8 @@ public class MainActivity extends Activity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == REQUEST_PICK_FOLDER && resultCode == RESULT_OK && data != null) {
-            if (data != null && data.getData() != null) {
-                // Get and save the selected folder URI
+            if (data.getData() != null) {
+                // Save the folder URI using the folder-specific method
                 Uri folderUri = data.getData();
                 saveFolderUri(folderUri);
             } else {
@@ -334,21 +359,17 @@ public class MainActivity extends Activity {
             }
         } else if (requestCode == REQUEST_TAKE_PHOTO && resultCode == RESULT_OK) {
             if (photoURI != null) {
-
                 saveImageToSelectedFolder();
             } else {
                 Log.e("ImageCapture", "Photo URI is null");
                 Toast.makeText(this, "Failed to capture photo.", Toast.LENGTH_SHORT).show();
             }
-
-        } else if (requestCode == PICK_IMAGE_REQUEST && resultCode == RESULT_OK && data != null && data.getData() != null) {
-
+        } else if (requestCode == PICK_IMAGE_REQUEST && resultCode == RESULT_OK
+                && data != null && data.getData() != null) {
             photoURI = data.getData();
-
             saveImageToSelectedFolder(photoURI);
         }
     }
-
 
 
     private void scheduleNotification() {
@@ -390,10 +411,11 @@ public class MainActivity extends Activity {
 
     private void scheduleNotification(Calendar notificationTime) {
 
-        OneTimeWorkRequest notificationWork = new OneTimeWorkRequest.Builder(MyWorker.class)
-                .setInitialDelay(calculateDelay(notificationTime), TimeUnit.MILLISECONDS)
-                .build();
-
+        PeriodicWorkRequest notificationWork = new PeriodicWorkRequest.Builder(
+                MyWorker.class,
+                1, // Repeat interval
+                TimeUnit.MINUTES
+        ).build();
         WorkManager.getInstance(this).enqueue(notificationWork);
         Toast.makeText(this, "Notification scheduled", Toast.LENGTH_SHORT).show();
 
